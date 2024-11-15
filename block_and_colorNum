@@ -1,0 +1,70 @@
+int getColorSelection() {
+    int colorSelection = 1;
+    int lastSelection = 0;
+
+    while (!getButtonPress(buttonEnter)) {
+        if (getButtonPress(buttonRight)) {
+            colorSelection += 1;
+            if (colorSelection > 4) {
+                colorSelection = 1;
+            }
+            wait1Msec(200);  // Debounce delay
+        }
+        if (getButtonPress(buttonLeft)) {
+            colorSelection -= 1;
+            if (colorSelection < 1) {
+                colorSelection = 4;
+            }
+            wait1Msec(200);  // Debounce delay
+        }
+
+        // Update the display only when selection changes
+        if (colorSelection != lastSelection) {
+            eraseDisplay();
+            switch (colorSelection) {
+                case 1: displayString(1, "Red"); break;
+                case 2: displayString(1, "Blue"); break;
+                case 3: displayString(1, "Yellow"); break;
+                case 4: displayString(1, "Green"); break;
+                // Add cases if there are more colors
+            }
+            lastSelection = colorSelection;
+        }
+
+        wait1Msec(100);  // Slow down loop to prevent excessive display updates
+    }
+
+    // Final confirmation and mapping
+    eraseDisplay();
+    switch (colorSelection) {
+        case 1: return (int)colorRed;
+        case 2: return (int)colorBlue;
+        case 3: return (int)colorYellow;
+        case 4: return (int)colorGreen;
+        default: return -1;
+    }
+}
+
+int getBlockCount() {
+    int blockNum = 1;
+    displayString(0, "Enter Block Count:");
+
+    while (!getButtonPress(buttonEnter)) {
+        if (getButtonPress(buttonRight)) {
+            blockNum += 1;
+            if (blockNum > 6) {
+                blockNum = 1;
+            }
+            wait1Msec(200);  // Debounce delay
+        }
+        if (getButtonPress(buttonLeft)) {
+            blockNum -= 1;
+            if (blockNum < 1) {
+                blockNum = 6;
+            }
+            wait1Msec(200);  // Debounce delay
+        }
+        displayString(2, "%d", blockNum);
+    }  // Add this closing brace
+    return blockNum;
+}
