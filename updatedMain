@@ -14,15 +14,20 @@ void searchAndCollectBlocks(int targetColor, int blockCount);
 int leftMotorStartPosition = 0;
 int rightMotorStartPosition = 0;
 
-// Gyro Initialization
-void initializeGyro() {
+// Sensor Initialization
+void initializeSensors() {
     SensorType[S4] = sensorEV3_Gyro;
     wait1Msec(50);
     SensorMode[S4] = modeEV3Gyro_Calibration;
     wait1Msec(50);
     SensorMode[S4] = modeEV3Gyro_Angle;
     wait1Msec(50);
-}
+    SensorType[S1] = sensorEV3_Color;
+    wait1Msec(50);
+    SensorType[S2] = sensorEV3_Touch;
+    wait1Msec(50);
+    SensorType[S3] = sensorEV3_IRSensor;
+    wait1Msec(50);
 
 // DONE
 int getColorSelection() {
@@ -140,7 +145,7 @@ void searchAndCollectBlocks(int targetColor, int blockCount) {
 }
 
 task main() {
-    initializeGyro();
+    initializeSensors();
 
     leftMotorStartPosition = nMotorEncoder[leftMotor];
     rightMotorStartPosition = nMotorEncoder[rightMotor];
@@ -153,4 +158,11 @@ task main() {
     displayString(2, "Block Count: %d", blockCount);
 
     searchAndCollectBlocks(targetColor, blockCount);
+}
+}
+
+// Opens the gripper to release the block
+void releaseBlock() {
+    motor[servoMotor] = 100;  // Open gripper
+    wait1Msec(1000);
 }
