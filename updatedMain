@@ -1,0 +1,156 @@
+#include "EV3Servo-lib-UW.c"
+
+// Function Prototypes
+int getColorSelection();
+int getBlockCount();
+bool driveToBlock();
+bool checkColor(int targetColor);
+void graspBlock();
+void releaseBlock();
+void returnToOriginalPosition();
+void searchAndCollectBlocks(int targetColor, int blockCount);
+
+// Global Variables
+int leftMotorStartPosition = 0;
+int rightMotorStartPosition = 0;
+
+// Gyro Initialization
+void initializeGyro() {
+    SensorType[S4] = sensorEV3_Gyro;
+    wait1Msec(50);
+    SensorMode[S4] = modeEV3Gyro_Calibration;
+    wait1Msec(50);
+    SensorMode[S4] = modeEV3Gyro_Angle;
+    wait1Msec(50);
+}
+
+// DONE
+int getColorSelection() {
+    int colorSelection = 1;
+    while (!getButtonPress(buttonEnter)) {
+        if (getButtonPress(buttonRight)) {
+            colorSelection++;
+            wait1Msec(200); // Debounce
+        }
+        if (getButtonPress(buttonLeft)) {
+            colorSelection--;
+            wait1Msec(200); // Debounce
+        }
+        if (colorSelection > 4) {
+            colorSelection = 1;
+        }
+        if (colorSelection < 1) {
+            colorSelection = 4;
+        }
+        eraseDisplay();
+        switch (colorSelection) {
+            case 1: displayString(1, "Red"); break;
+            case 2: displayString(1, "Blue"); break;
+            case 3: displayString(1, "Yellow"); break;
+            case 4: displayString(1, "Green"); break;
+        }
+    }
+    eraseDisplay();
+    return colorSelection;
+}
+
+// DONE
+int getBlockCount() {
+    int blockCount = 0;
+    displayString(0, "Enter Block Count:");
+    displayString(1, "Press buttons (1-9)");
+    while (blockCount < 1 || blockCount > 9) {
+        while (!getButtonPress(buttonEnter)) {
+            if (getButtonPress(buttonRight)) {
+                blockCount++;
+                wait1Msec(200); // Debounce
+            }
+            if (getButtonPress(buttonLeft)) {
+                blockCount--;
+                wait1Msec(200); // Debounce
+            }
+            if (blockCount < 1) blockCount = 1;
+            if (blockCount > 9) blockCount = 9;
+            eraseDisplay();
+            displayString(1, "Count: %d", blockCount);
+        }
+        wait1Msec(500); // Debounce delay
+    }
+    eraseDisplay();
+    return blockCount;
+}
+
+// Drives towards a detected block using IR sensor
+bool driveToBlock() {
+    motor[leftMotor] = motor[rightMotor] = 50;
+    while (SensorValue[IRSensor] < 5) {}
+    motor[leftMotor] = 50;
+    motor[rightMotor] = -50;
+    while (abs(getGyroDegrees(S4)) < 180) {}
+    motor[leftMotor] = motor[rightMotor] = 0;
+
+    // Verify if block is really there (e.g., check touch sensor)
+    return SensorValue[touchSensor] == 1;
+}
+
+// DONE
+bool checkColor(int targetColor) {
+    return SensorValue[colorSensor] == targetColor;
+}
+
+// DONE
+void graspBlock() {
+    motor[servoMotor] = -100;  
+    wait1Msec(1000);
+}
+
+// DONE
+void releaseBlock() {
+    motor[servoMotor] = 100;
+    wait1Msec(1000);
+}
+
+// DONE
+void returnToOriginalPosition() {
+    int leftDifference = nMotorEncoder[leftMotor] - leftMotorStartPosition;
+    int rightDifference = nMotorEncoder[rightMotor] - rightMotorStartPosition;
+    
+    motor[leftMotor] = -50;
+    motor[rightMotor] = -50;
+    while (abs(nMotorEncoder[leftMotor] - leftMotorStartPosition) > abs(leftDifference) || 
+           abs(nMotorEncoder[rightMotor] - rightMotorStartPosition) > abs(rightDifference)) {}
+    motor[leftMotor] = motor[rightMotor] = 0;
+}
+
+// Main search and collection routine
+void searchAndCollectBlocks(int targetColor, int blockCount) {
+    int collectedBlocks = 0;
+    while (collectedBlocks < blockCount) {
+        if (driveToBlock()) {
+            graspBlock();  
+            if (checkColor(targetColor)) {
+                returnToOriginalPosition();
+                releaseBlock();  
+                collectedBlocks++;
+            } else {
+                releaseBlock();  // Release block if incorrect color
+            }
+        }
+    }
+}
+
+task main() {
+    initializeGyro();
+
+    leftMotorStartPosition = nMotorEncoder[leftMotor];
+    rightMotorStartPosition = nMotorEncoder[rightMotor];
+
+    int targetColor = getColorSelection();
+    int blockCount = getBlockCount();
+
+    eraseDisplay();
+    displayString(1, "Target Color: %d", targetColor);
+    displayString(2, "Block Count: %d", blockCount);
+
+    searchAndCollectBlocks(targetColor, blockCount);
+}
