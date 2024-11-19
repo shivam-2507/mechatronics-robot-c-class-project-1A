@@ -77,6 +77,8 @@ bool isBlock() {
 }
 
 void driveToBlock() {
+	eraseDisplay();
+	displayBigTextLine(4, "big driver");
 	motor[motorA] = motor[motorD] = -25;
 	motor[motorB] = motor[motorC] = 25;
 
@@ -98,8 +100,10 @@ bool checkColor(int targetColor) {
 }
 
 void rotateRobot(int degrees) {
-    const float WHEEL_DIAMETER = 5.6; // Replace with your wheel diameter (in cm)
-    const float TRACK_WIDTH = 12.0;   // Replace with your robot's track width (in cm)
+		eraseDisplay();
+		displayBigTextLine(4, "rotator");
+    const float WHEEL_DIAMETER = 5.5; // Replace with your wheel diameter (in cm)
+    const float TRACK_WIDTH = 6.5;   // Replace with your robot's track width (in cm)
 
     // Calculate the number of encoder degrees needed
     float targetDegrees = (360.0 * TRACK_WIDTH * degrees) / (WHEEL_DIAMETER * 360.0);
@@ -127,22 +131,21 @@ void rotateRobot(int degrees) {
 
 // DONE
 void graspBlock() {
-	displayString(4, "step 1");
+	eraseDisplay();
+	displayBigTextLine(4, "grasp");
 	// Start turning
 	//setServoPosition(S2, 6, 0);
 	//setServoPosition(S2, 5, 0);
-	
+
 	rotateRobot(180);
-	displayString(5, "Step2");
 	wait1Msec(100);
-	
+
 	motor[motorA] = motor[motorD] = 15;
 	motor[motorB] = motor[motorC] = -15;
 
 	while (SensorValue[S4] != 1) {}
 	wait1Msec(100);
 
-	displayString(6, "Step 5");
 	motor[motorA] = motor[motorD] = 0;
 	motor[motorB] = motor[motorC] = 0;
 	setServoPosition(S2, 6, 70);
@@ -159,48 +162,53 @@ wait1Msec(100);
 
 // DONE
 void returnToOriginalPosition(int initialEncoderA, int initialEncoderC) {
-    int currentEncoderA = nMotorEncoder[motorA];
-    int currentEncoderC = nMotorEncoder[motorC];
-
-    // Calculate the distance to drive back
-    int distanceA = initialEncoderA - currentEncoderA;
-    int distanceC = initialEncoderC - currentEncoderC;
+		eraseDisplay();
+		displayBigTextLine(4, "return to og");
+		
+		int distanceA = nMotorEncoder[motorA];
+		int distanceB = nMotorEncoder[motorB];
+		int distanceC = nMotorEncoder[motorC];
+		int distanceD = nMotorEncoder[motorD];
 
     // Set motors to reverse direction
     motor[motorA] = (distanceA > 0) ? -20 : 20;
     motor[motorC] = (distanceC > 0) ? -20 : 20;
+    motor[motorB] = (distanceB > 0) ? -20 : 20;
+    motor[motorD] = (distanceD > 0) ? -20 : 20;
 
     // Drive until back to initial position
-    while (abs(nMotorEncoder[motorA] - initialEncoderA) > 5 || abs(nMotorEncoder[motorC] - initialEncoderC) > 5) {
+    while (abs(nMotorEncoder[motorA]) > 5 && abs(nMotorEncoder[motorB]) > 5 && abs(nMotorEncoder[motorC]) > 5 && abs(nMotorEncoder[motorD]) > 5) {
         // Update motor speeds dynamically for fine adjustments
-        motor[motorA] = (nMotorEncoder[motorA] < initialEncoderA) ? -20 : 20;
-        motor[motorC] = (nMotorEncoder[motorC] < initialEncoderC) ? -20 : 20;
+        motor[motorA] = (nMotorEncoder[motorA] < 0) ? -20 : 20;
+        motor[motorC] = (nMotorEncoder[motorC] < 0) ? -20 : 20;
+        motor[motorB] = (nMotorEncoder[motorA] < 0) ? -20 : 20;
+        motor[motorD] = (nMotorEncoder[motorC] < 0) ? -20 : 20;
     }
 
     // Stop motors
     motor[motorA] = 0;
     motor[motorC] = 0;
+    motor[motorB] = 0;
+    motor[motorD] = 0;
 
     displayBigTextLine(8, "Back to Start!");
 }
 
 // Main search and collection routine
-void searchAndCollectBlocks(int targetColor, int blockCount, int initialEncoderA, int initialEncoderC) {
+void searchAndCollectBlocks(int targetColor, int blockCount) {
 	int collectedBlocks = 0;
 	while (collectedBlocks < blockCount) {
-		float dist = 0;
-		
 		if (isBlock()) {
 			driveToBlock();
 			graspBlock();
 			if (checkColor(targetColor)) {
-				returnToOriginalPosition(initialEncoderA, initialEncoderC);
+				returnToOriginalPosition();
 				//releaseBlock();
 				collectedBlocks++;
 			}
 			else {
 				//releaseBlock();
-				returnToOriginalPosition(initialEncoderA, initialEncoderC);
+				returnToOriginalPosition();
 			}
 		}
 		else {
@@ -213,11 +221,6 @@ task main() {
     initializeSensors();
     SensorType[S1] = sensorEV3_GenericI2C;
     wait1Msec(100);
-    
-    if (!initSensorMux(msensor_S1_1, gyroAngle)) {
-        displayString(2, "Error initializing msensor_S1_2");
-        return;
-    }
 
     if (!initSensorMux(msensor_S1_3, colorMeasureColor)) {
         displayString(3, "Error initializing msensor_S1_3");
@@ -235,10 +238,7 @@ task main() {
     displayString(2, "Block Count: %d", blockCount);
 
     // Record initial position
-    nMotorEncoder[motorA] = 0;
-    nMotorEncoder[motorC] = 0;
-    int initialEncoderA = nMotorEncoder[motorA];
-    int initialEncoderC = nMotorEncoder[motorC];
+    nMotorEncoder[motorA] = nMotorEncoder[motorC] = nMotorEncoder[motorB] = nMotorEncoder[motorD] = 0; 
 
     // Start the block search and collection
     searchAndCollectBlocks(targetColor, blockCount, initialEncoderA, initialEncoderC);
