@@ -14,7 +14,7 @@ void initializeSensors() {
 
 // DONE
 int getColorSelection() {
-    int colorSelection = 1;
+    int colorSelection = 1;`
     while (!getButtonPress(buttonEnter)) {
         if (getButtonPress(buttonRight)) {
             colorSelection++;
