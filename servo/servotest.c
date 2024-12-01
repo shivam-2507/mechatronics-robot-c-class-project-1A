@@ -1,4 +1,4 @@
-#include "servolibrary.c"
+#include "EV3Servo-lib-UW.c"
 task main()
 {
     // configure servo controller port
