@@ -65,7 +65,8 @@ The robot utilizes sensors for color detection and motors for sorting toys into 
 
 - LEGO EV3 Mindstorm kit.  
 - EV3 IR sensor.  
-- EV3 touch sensor.  
+- EV3 touch sensor.
+- EV3 colour sensor.
 - EV3-compatible multiplexer (e.g., NXT sensor multiplexer).  
 
 ## **Future Improvements**  
