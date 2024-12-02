@@ -1,6 +1,8 @@
+//servo and multiplexor libraries
 #include "EV3Servo-lib-UW.c"
 #include "UW_sensorMux.c"
 
+//function to initialize all sensors
 void initializeSensors() {
     SensorType[S4] = sensorEV3_Touch;
     wait1Msec(50);
@@ -12,25 +14,36 @@ void initializeSensors() {
     wait1Msec(50);
 }
 
-// DONE
+//function that returns an "int" colour value
 int getColorSelection() {
-    int colorSelection = 1;`
+
+    //colorselection goes from range 1-4 which is why it is initialized at 1
+    int colorSelection = 1;
+
+    //this loop runs while the enter button is not pressed
     while (!getButtonPress(buttonEnter)) {
+        //incrementing positively if the right button is pressed and negatively if left button is pressed
         if (getButtonPress(buttonRight)) {
             colorSelection++;
-            wait1Msec(200); // Debounce
+            wait1Msec(200); //to ensure the colorSelection variable is only incremented by 1
         }
         if (getButtonPress(buttonLeft)) {
             colorSelection--;
-            wait1Msec(200); // Debounce
+            wait1Msec(200);
         }
+
+        //if statements to ensure the colorSelection variable stays within the range 1-4
         if (colorSelection > 4) {
             colorSelection = 1;
         }
         if (colorSelection < 1) {
             colorSelection = 4;
         }
+
+        //erasing the current color on screen before drawing a new one
         eraseDisplay();
+
+        //each number from 1-4 is associated with a color
         switch (colorSelection) {
         case 1: displayBigTextLine(4, "Red"); break;
         case 2: displayBigTextLine(4, "Blue"); break;
