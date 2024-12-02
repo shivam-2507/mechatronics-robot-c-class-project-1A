@@ -60,7 +60,7 @@ The robot utilizes sensors for color detection and motors for sorting toys into 
 - `searchAndCollectBlocks()`: Main routine for searching, grasping, and sorting blocks.  
 - `graspBlock()` and `releaseBlock()`: Handles block manipulation.  
 - `followIRBeacon()`: Navigates the robot to the designated area using the IR beacon.
-- 
+  
 ## **Hardware Requirements**  
 
 - LEGO EV3 Mindstorm kit.  
