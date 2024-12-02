@@ -1,6 +1,6 @@
 # **Colourific - Robotic Toy Sorting System**
 
-**Developed by **  
+**Developed by**  
 - Shivam Walia
 - Saswath Yeshwanth   
 - Kyle Surendran   
