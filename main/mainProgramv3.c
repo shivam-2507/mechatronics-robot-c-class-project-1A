@@ -1,8 +1,6 @@
-//servo and multiplexor libraries
 #include "EV3Servo-lib-UW.c"
 #include "UW_sensorMux.c"
 
-//function to initialize all sensors
 void initializeSensors() {
     SensorType[S4] = sensorEV3_Touch;
     wait1Msec(50);
@@ -14,36 +12,25 @@ void initializeSensors() {
     wait1Msec(50);
 }
 
-//function that returns an "int" colour value
+// DONE
 int getColorSelection() {
-
-    //colorselection goes from range 1-4 which is why it is initialized at 1
     int colorSelection = 1;
-
-    //this loop runs while the enter button is not pressed
     while (!getButtonPress(buttonEnter)) {
-        //incrementing positively if the right button is pressed and negatively if left button is pressed
         if (getButtonPress(buttonRight)) {
             colorSelection++;
-            wait1Msec(200); //to ensure the colorSelection variable is only incremented by 1
+            wait1Msec(200); // Debounce
         }
         if (getButtonPress(buttonLeft)) {
             colorSelection--;
-            wait1Msec(200);
+            wait1Msec(200); // Debounce
         }
-
-        //if statements to ensure the colorSelection variable stays within the range 1-4
         if (colorSelection > 4) {
             colorSelection = 1;
         }
         if (colorSelection < 1) {
             colorSelection = 4;
         }
-
-        //erasing the current color on screen before drawing a new one
         eraseDisplay();
-
-        //each number from 1-4 is associated with a color
         switch (colorSelection) {
         case 1: displayBigTextLine(4, "Red"); break;
         case 2: displayBigTextLine(4, "Blue"); break;
@@ -51,8 +38,19 @@ int getColorSelection() {
         case 4: displayBigTextLine(4, "Green"); break;
         }
     }
-    eraseDisplay();
-    return colorSelection;
+   eraseDisplay();
+   if (colorSelection == 1) {
+     return 5;
+   }
+   else if (colorSelection == 2) {
+     return 2;
+   }
+   else if (colorSelection == 3) {
+     return 6;
+   }
+   else {
+     return 3;
+   }
 }
 
 // DONE
@@ -61,25 +59,28 @@ int getBlockCount() {
     while (!getButtonPress(buttonEnter)) {
         if (getButtonPress(buttonRight)) {
             blockCount = (blockCount < 9) ? blockCount + 1 : 9;
-            wait1Msec(200); // Debounce
+            wait1Msec(200);
         }
         if (getButtonPress(buttonLeft)) {
             blockCount = (blockCount > 1) ? blockCount - 1 : 1;
-            wait1Msec(200); // Debounce
+            wait1Msec(200);
         }
         eraseDisplay();
         displayString(0, "Enter Block Count:");
         displayString(1, "Press buttons (1-9)");
         displayBigTextLine(4, "Count: %d", blockCount);
     }
-    wait1Msec(500); // Debounce delay
+    wait1Msec(500);
     eraseDisplay();
     return blockCount;
 }
 
 // Detects if a block is nearby
 bool isBlock() {
-    return SensorValue[S3] < 100;
+      if (SensorValue[S3] < 100) {
+    return true;
+  }
+  return false;
 }
 
 void driveToBlock() {
@@ -98,12 +99,17 @@ void driveToBlock() {
 
 // DONE
 bool checkColor(int targetColor) {
-    return readMuxSensor(msensor_S1_3) == targetColor;
+      if (readMuxSensor(msensor_S1_3) == targetColor) {
+            return true;
+  }
+  else {
+      return false;
+  }
 }
 
 void rotateRobot(int degrees) {
     eraseDisplay();
-    displayBigTextLine(4, "Rotating %d°", degrees);
+    displayBigTextLine(4, "Rotating 180");
 
     nMotorEncoder[motorA] = 0;
     int rotationSpeed = (degrees > 0) ? 20 : -20;
@@ -117,22 +123,39 @@ void rotateRobot(int degrees) {
 }
 
 void graspBlock() {
-    rotateRobot(310);
+    long timeStart = nSysTime; // Record the start time
     eraseDisplay();
     displayBigTextLine(4, "Grasping Block");
+
+    wait1Msec(50);
+    setServoPosition(S2, 6, 0);
+    setServoPosition(S2, 5, 0);
+    wait1Msec(500);
+
+    rotateRobot(305);
+    wait1Msec(50);
 
     motor[motorA] = motor[motorD] = 15;
     motor[motorB] = motor[motorC] = -15;
 
-    while (SensorValue[S4] != 1) {}
+    // Wait until the touch sensor (S4) is triggered or timeout occurs
+    while (SensorValue[S4] != 1) {
+        if (nSysTime - timeStart > 15000) { // 10-second timeout
+            displayBigTextLine(6, "Timeout! Moving on.");
+            motor[motorA] = motor[motorD] = 0;
+            motor[motorB] = motor[motorC] = 0;
+            return; // Exit the function
+        }
+    }
+
     wait1Msec(100);
 
     motor[motorA] = motor[motorD] = 0;
     motor[motorB] = motor[motorC] = 0;
 
     wait1Msec(1000);
-    setServoPosition(S2, 6, 70);
-    setServoPosition(S2, 5, -70);
+    setServoPosition(S2, 6, 90);
+    setServoPosition(S2, 5, -90);
     wait1Msec(1000);
 }
 
@@ -146,21 +169,28 @@ void releaseBlock() {
 // DONE
 void followIRBeacon() {
     wait1Msec(50);
+    int startTime = nSysTime; // Record the start time in milliseconds
+    int elapsedTime = 0;      // Track elapsed time
 
     while (true) {
+        elapsedTime = nSysTime - startTime; // Calculate elapsed time
+
+        // Exit if 20 seconds (20000 ms) have passed
+        if (elapsedTime >= 20000) {
+            motor[motorA] = motor[motorB] = motor[motorC] = motor[motorD] = 0; // Stop all motors
+            break;
+        }
+
         int heading = getIRBeaconDirection(S3); // Get the beacon's direction (-25 to 25)
         int signalStrength = getIRBeaconStrength(S3); // Adjust index if needed for signal strength
 
-        
-        /*if (getIRRemoteButtons(S3) == 0) {
-        	motor[motorA] = motor[motorD] = motor[motorB] = motor[motorC] = 0;
-        	break;
-        }*/
-        // Adjust movement based on heading
-        if (signalStrength == 1) {
-        	motor[motorA] = motor[motorB] = motor[motorC] = motor[motorD] = 0;
-        	break;
+        // Stop if the beacon's signal strength is within the desired range
+        if (signalStrength < 5 && signalStrength > 1) {
+            motor[motorA] = motor[motorB] = motor[motorC] = motor[motorD] = 0;
+            break;
         }
+
+        // Adjust movement based on heading
         if (heading > 0) {
             // Beacon is to the right
             motor[motorA] = -20;  // Right wheels slower
@@ -189,12 +219,19 @@ void followIRBeacon() {
     }
 }
 
-
-// Main search and collection routine
 void searchAndCollectBlocks(int targetColor, int blockCount) {
     int collectedBlocks = 0;
+    long timeStart = nSysTime; // Record the start time
+
     while (collectedBlocks < blockCount) {
+        // Exit if 40 seconds have passed since the last block was found
+        if (nSysTime - timeStart > 40000) {
+            displayBigTextLine(6, "Time's up! Exiting.");
+            break;
+        }
+
         if (isBlock()) {
+            timeStart = nSysTime; // Reset the timer when a block is detected
             driveToBlock();
             graspBlock();
             if (checkColor(targetColor)) {
@@ -204,12 +241,19 @@ void searchAndCollectBlocks(int targetColor, int blockCount) {
             } else {
                 releaseBlock();
                 followIRBeacon();
+                wait1Msec(2000);
+                rotateRobot(180);
             }
         } else {
             rotateRobot(10); // Rotate to search for a block
         }
     }
+
+    if (collectedBlocks < blockCount) {
+        displayBigTextLine(4, "Blocks Collected: %d/%d", collectedBlocks, blockCount);
+    }
 }
+
 
 task main() {
     initializeSensors();
