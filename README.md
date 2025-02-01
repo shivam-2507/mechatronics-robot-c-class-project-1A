@@ -80,4 +80,5 @@ The robot utilizes sensors for color detection and motors for sorting toys into 
 This project was developed as part of the MTE 100/MTE 121 course at the University of Waterloo. Special thanks to our instructors and peers for their guidance and feedback.  
 
 ## **Project Images** 
-![Robot Image](images/IMG_6213.HEIC)
+![Robot Image](images/IMG_6209_(1).jpg)
+![Robot Image](images/IMG_6213_(1).jpg)
